@@ -2,6 +2,7 @@
 #include <cctype>
 #include <unordered_map>
 #include "Context.hpp"
+#include "constants.hpp"
 
 Vector2 getCenter(int width, int height) {
     Vector2 result;
@@ -93,6 +94,14 @@ std::string generateSentence(Context &context, int numberOfWords) {
     auto words = context.wordsLists[context.selectedWordList].words;
     std::string output = "";
 
+
+    // increase number of words just in case there are not enough in asset file
+    int i = 0;
+    while (words.size() < numberOfWords) {
+        words.push_back(words[i]);
+        i++;
+    }
+
     // Shuffle the amount of words we need
     random_unique(words.begin(), words.end(), numberOfWords);
 
@@ -165,13 +174,16 @@ std::string generateSentence(Context &context, int numberOfWords) {
     return output;
 }
 
-void restartTest(Context &context, bool repeat) {
-    if (!repeat) {
+bool restartTest(Context &context, bool repeat, bool start_over) {
+    if (start_over) {
+        // do shared code below
+    } else if (repeat) {
+        // create new text to write here, and continue to shared code
         int amount = context.testSettings.testModeAmounts[context.testSettings.selectedAmount];
 
-        // If time mode is set put only 50 words after than it will be incremented as we type
+        // If time mode is set put two words for each sec, it will be generated more if neede
         if (context.testSettings.testMode == TestMode::TIME) {
-            amount = 120;
+            amount = amount * 2;
         }
 
         context.sentence = generateSentence(context, amount);
@@ -182,9 +194,13 @@ void restartTest(Context &context, bool repeat) {
                 context.sentence += '.';
             }
         }
+    } else if (!START_OVER_ON_ENTER) {
+        context.input_list.push_back(10); // just write enter into current text
+        return true;
     }
 
     context.input = "";
+    context.input_list.clear();
     context.currentScreen = Screen::TEST;
     context.wpm = 0;
     context.cpm = 0;
@@ -194,6 +210,7 @@ void restartTest(Context &context, bool repeat) {
     context.correctLetters = 0;
     context.incorrecLetters = 0;
     context.furthestVisitedIndex = -1;
+    return false; // restart
 }
 
 void endTest(Context &context) {

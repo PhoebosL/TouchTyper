@@ -16,10 +16,12 @@ void result(Context &context) {
     Vector2 center = getCenter(context.screenWidth, context.screenHeight);
 
     std::vector<std::vector<std::string>> scores = {
-        {"wpm", TextFormat("%d", context.wpm)},
-        {"raw", TextFormat("%d", context.raw)},
-        {"acc", TextFormat("%d\%%", context.accuracy)},
-        {"time", TextFormat("%ds", (int)((context.testEndTime - context.testStartTime)))},
+        {"WPM", TextFormat("%d ", context.wpm)},
+        {"RAW", TextFormat("%d ", context.raw)},
+        {"Accurate", TextFormat("%d\%% ", context.accuracy)},
+        {"Time", TextFormat("%ds ", (int)((context.testEndTime - context.testStartTime)))},
+        {"Correct", TextFormat("%d  ", context.correctLetters)},
+        {"Incorect", TextFormat("%d  ", context.incorrecLetters)},
     };
 
     float totalWidth = 0;

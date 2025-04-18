@@ -28,7 +28,7 @@ bool textButton(Context& context, Vector2 positon, std::string text);
 
 double getTimeInMin();
 
-void restartTest(Context &context, bool repeat);
+bool restartTest(Context &context, bool repeat, bool start_over);
 
 void endTest(Context &context);
 

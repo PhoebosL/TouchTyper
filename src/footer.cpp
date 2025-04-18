@@ -13,11 +13,10 @@ bool showWordListOptions = false;
 bool showCursorOptions = false;
 
 int optionSelect(Context &context, std::vector<std::string> &options, int selected) {
-    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a",
-            context.fonts.tinyFont.size, 1);
-
+    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a", context.fonts.tinyFont.size, 1);
     Theme theme = context.themes[context.selectedTheme];
     int height = options.size() * (sizeOfCharacter.y+(optionPadding * 2));
+
     Vector2 center = getCenter(context.screenWidth, context.screenHeight);
     Rectangle rect;
     rect.height = height + (optionsContainerPadding*2);
@@ -69,8 +68,7 @@ int optionSelect(Context &context, std::vector<std::string> &options, int select
 
 
 void footer(Context &context) {
-    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a",
-            context.fonts.tinyFont.size, 1);
+    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a", context.fonts.tinyFont.size, 1);
     Theme theme = context.themes[context.selectedTheme];
 
     int width = std::min(context.screenWidth-(PADDING*2), MAX_WIDTH);
@@ -92,13 +90,14 @@ void footer(Context &context) {
 
     // Draw version
     drawMonospaceText(context.fonts.tinyFont.font,
-            VERSION,
-            versionPosition,
-            context.fonts.tinyFont.size,
-            theme.text);
+        VERSION,
+        versionPosition,
+        context.fonts.tinyFont.size,
+        theme.text
+    );
 
     // Draw shortcut
-    std::string shortcut = "shift  +  enter  - repeat test";
+    std::string shortcut = "shift  +  enter  - new test";
     Vector2 position = center;
     position.y = context.screenHeight - (PADDING + sizeOfCharacter.y);
     position.x -= (sizeOfCharacter.x*shortcut.size())/2.0;
@@ -114,12 +113,16 @@ void footer(Context &context) {
     rec.width = (sizeOfCharacter.x * 5) + 8;
     DrawRectangleRoundedLines(rec, 0.1, 5, 1, theme.text);
 
-    shortcut = "enter  -  new test";
+    shortcut = "ctrl   +   enter  -  repeat test";
     position.x  = getCenter(context.screenWidth, context.screenHeight).x - (sizeOfCharacter.x*shortcut.size())/2.0;
     position.y -= sizeOfCharacter.y + 10;
     drawMonospaceText(context.fonts.tinyFont.font, shortcut.c_str(), position, context.fonts.tinyFont.size, theme.text);
     rec.x = position.x-4;
     rec.y = position.y-2;
+    rec.width = (sizeOfCharacter.x * 5) + 8;
+    DrawRectangleRoundedLines(rec, 0.1, 5, 1, theme.text);
+    position.x += sizeOfCharacter.x * 10;
+    rec.x = position.x+4;
     rec.width = (sizeOfCharacter.x * 5) + 8;
     DrawRectangleRoundedLines(rec, 0.1, 5, 1, theme.text);
 
@@ -136,7 +139,6 @@ void footer(Context &context) {
         }
 
         int selected = optionSelect(context, themeOptions, context.selectedTheme);
-
         if (selected != -1) {
             context.selectedTheme = selected;
             showThemesOptions = false;
@@ -166,7 +168,7 @@ void footer(Context &context) {
         if (selected != -1) {
             context.selectedWordList = selected;
             showWordListOptions = false;
-            restartTest(context, false);
+            restartTest(context, true, false);
         }
     }
 

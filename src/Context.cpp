@@ -1,20 +1,11 @@
 #include <algorithm>
+#include "constants.hpp"
 #include "Context.hpp"
 #include "helpers.hpp"
 #include <iostream>
 #include "../libs/raylib/src/raylib.h"
 
 void Context::load() {
-    Theme arch;
-    arch.name = "Arch";
-    arch.background = {6, 7, 9, 255};
-    arch.text = {92, 96, 133, 255};
-    arch.cursor = {214, 227, 255, 255};
-    arch.wrong = RED;
-    arch.correct = arch.cursor;
-    arch.highlight = arch.correct;
-    this->themes.push_back(arch);
-
     Theme black;
     black.name = "Black";
     black.background = {17, 17, 17, 255};
@@ -24,6 +15,16 @@ void Context::load() {
     black.correct = black.cursor;
     black.highlight = black.cursor;
     this->themes.push_back(black);
+
+    Theme arch;
+    arch.name = "Arch";
+    arch.background = {6, 7, 9, 255};
+    arch.text = {92, 96, 133, 255};
+    arch.cursor = {214, 227, 255, 255};
+    arch.wrong = RED;
+    arch.correct = arch.cursor;
+    arch.highlight = arch.correct;
+    this->themes.push_back(arch);
 
     Theme white;
     white.name = "White";
@@ -78,33 +79,38 @@ void Context::load() {
     std::string base = GetApplicationDirectory();
 
     // Load fonts
-    this->fonts.typingTestFont.size = 32;
-    this->fonts.typingTestFont.font = LoadFontEx((base+"assets/fonts/JetBrainsMono-Regular.ttf").c_str(),
-            this->fonts.typingTestFont.size, nullptr, 0);
+    this->fonts.typingTestFont.size = 44;
+    this->fonts.typingTestFont.font = LoadFontEx(
+        (base + ASSET_PATH + "fonts/" + USE_FONT).c_str(), // path where font is located
+        this->fonts.typingTestFont.size, // size
+        nullptr,
+        400 // number of glyphs to load (needed for unicode characters above 95!)
+    );
     this->fonts.titleFont.size = 40;
-    this->fonts.titleFont.font = LoadFontEx((base+"assets/fonts/LexendDeca-Regular.ttf").c_str(),
-            this->fonts.titleFont.size, nullptr, 0);
+    this->fonts.titleFont.font = LoadFontEx((base + ASSET_PATH + "fonts/" + USE_FONT).c_str(), this->fonts.titleFont.size, nullptr, -1);
     this->fonts.tinyFont.size = 18;
-    this->fonts.tinyFont.font = LoadFontEx((base+"assets/fonts/JetBrainsMono-Regular.ttf").c_str(),
-            this->fonts.tinyFont.size, nullptr, 0);
+    this->fonts.tinyFont.font = LoadFontEx((base + ASSET_PATH + "fonts/" + USE_FONT).c_str(), this->fonts.tinyFont.size, nullptr, 0);
     this->fonts.bigFont.size = 90;
-    this->fonts.bigFont.font = LoadFontEx((base+"assets/fonts/JetBrainsMono-Regular.ttf").c_str(),
-            this->fonts.bigFont.size, nullptr, 0);
+    this->fonts.bigFont.font = LoadFontEx((base + ASSET_PATH + "fonts/" + USE_FONT).c_str(), this->fonts.bigFont.size, nullptr, 0);
 
 
     // Load word lists
     int numberOfFiles;
-    char **files = GetDirectoryFiles((base+"assets/word_lists/").c_str(), &numberOfFiles);
+    char **files = GetDirectoryFiles((base + ASSET_PATH + "word_lists/").c_str(), &numberOfFiles);
 
     for (int i = numberOfFiles-1; i > -1; i--) {
         if (files[i][0] != '.') {
             WordList wordList;
             std::string name = files[i];
+            if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".txt") != 0) {
+                // skip any file without extension *.txt
+                continue;
+            }
             name.replace(name.find(".txt"), sizeof(".txt") - 1, "");
             name.replace(name.find("_"), sizeof("_") - 1, " ");
             name[0] = toupper(name[0]);
             wordList.name = name;
-            getFileContent((base+"assets/word_lists/"+files[i]).c_str(), wordList.words);
+            getFileContent((base + ASSET_PATH + "word_lists/" + files[i]).c_str(), wordList.words);
             this->wordsLists.push_back(wordList);
         }
     }
@@ -115,7 +121,7 @@ void Context::load() {
         int index;
 
         for (int i = 0; i < this->wordsLists.size(); i++) {
-            if (this->wordsLists[i].name == "English 200") {
+            if (this->wordsLists[i].name == "Czech 200") {
                 index = i;
                 break;
             }
@@ -124,18 +130,17 @@ void Context::load() {
     }
 
     // Load sounds
-    this->sounds.clickSound1 = LoadSound((base+"assets/audio/otemu_browns.wav").c_str());
+    this->sounds.clickSound1 = LoadSound((base + ASSET_PATH + "audio/otemu_browns.wav").c_str());
 
     this->testSettings.selectedAmount = loadStorageValue(2, 1);
     this->testSettings.usePunctuation = loadStorageValue(3, 0);
     this->testSettings.useNumbers = loadStorageValue(4, 0);
     this->testSettings.testMode = (TestMode)loadStorageValue(5, 0);
     this->cursorStyle = (CursorStyle)loadStorageValue(6, 0);
-
     this->soundOn = loadStorageValue(7, 1);
 
     #if defined(PLATFORM_WEB)
-    this->soundOn = 0; // On web sound won't start playing until the user clicks on the page
+        this->soundOn = 0; // On web sound won't start playing until the user clicks on the page
     #endif
 }
 

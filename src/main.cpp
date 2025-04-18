@@ -13,19 +13,10 @@
 
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
-EM_JS(int, canvasGetWidth, (), {
-  return document.getElementById("canvas").clientWidth;
-});
-
-EM_JS(int, canvasGetHeight, (), {
-  return document.getElementById("canvas").clientHeight;
-});
-EM_JS(int, browserWindowWidth, (), {
-    return window.innerWidth;
-});
-EM_JS(int, browserWindowHeight, (), {
-    return window.innerHeight;
-});
+EM_JS(int, canvasGetWidth, (),      { return document.getElementById("canvas").clientWidth; });
+EM_JS(int, canvasGetHeight, (),     { return document.getElementById("canvas").clientHeight; });
+EM_JS(int, browserWindowWidth, (),  { return window.innerWidth; });
+EM_JS(int, browserWindowHeight, (), { return window.innerHeight; });
 #endif
 
 
@@ -35,8 +26,7 @@ int getWindowWidth() {
 #else
     if (IsWindowFullscreen()) {
         return GetMonitorWidth(GetCurrentMonitor());
-    }
-    else {
+    } else {
         return GetScreenWidth();
     }
 #endif
@@ -48,8 +38,7 @@ int getWindowHeight() {
 #else
     if (IsWindowFullscreen()) {
         return GetMonitorHeight(GetCurrentMonitor());
-    }
-    else {
+    } else {
         return GetScreenHeight();
     }
 #endif
@@ -71,7 +60,7 @@ int main(void) {
 
     context.load();
 
-    restartTest(context, false);
+    restartTest(context, true, false);
 
 #if defined(PLATFORM_WEB)
     std::cout << "Setting up emscripten loop" << std::endl;
@@ -104,19 +93,14 @@ void loop() {
     if (IsKeyPressed(KEY_F11)) {
         // see what display we are on right now
 
-        if (IsWindowFullscreen())
-        {
+        if (IsWindowFullscreen()) {
             SetWindowSize(context.screenWidth, context.screenHeight);
             ToggleFullscreen();
-        }
-        else
-        {
-
+        } else {
             ToggleFullscreen();
             int monitor = GetCurrentMonitor();
             SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
         }
-
     }
 #endif
 
@@ -130,7 +114,10 @@ void loop() {
     context.mouseOnClickable = false;
 
     if (IsKeyPressed(KEY_ENTER)) {
-        restartTest(context, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+        // create new test using shift + enter but dont start over the test by just pressing enter
+        bool restart = (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+        bool start_over = (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL));
+        restartTest(context, restart, start_over);
     }
 
     if (context.testRunning) {
@@ -151,65 +138,66 @@ void loop() {
         if (IsKeyPressed(KEY_BACKSPACE)) {
             if (context.soundOn) PlaySoundMulti(context.sounds.clickSound1);
 
-            if (context.input.size()) {
+            if (context.input_list.size()) {
                 // CTRL + Backspace
                 if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) {
-                    while (context.input.size() && context.input[context.input.size()-1] == ' ' ) {
-                        context.input.pop_back();
+                    while (context.input_list.size() && context.input_list[context.input_list.size()-1] == ' ' ) {
+                        context.input_list.pop_back();
                     }
 
-                    while ((context.input[context.input.size()-1] != ' ') && context.input.size()) {
-                        context.input.pop_back();
+                    while ((context.input_list[context.input_list.size()-1] != ' ') && context.input_list.size()) {
+                        context.input_list.pop_back();
                     }
                 } else { // Normal Backspace
-                    context.input.pop_back();
+                    context.input_list.pop_back();
                 }
             }
+            context.furthestVisitedIndex=(int)context.input_list.size();
+            // context.furthestVisitedIndex = context.furthestVisitedIndex < 1 ? 1 : context.furthestVisitedIndex;
         }
 
-        if (key && (context.input.size() < context.sentence.size())) {
-            context.input += key;
+        if (key && (context.input_list.size() < context.sentenceLength)) {
+            // context.input += key;
+            context.input_list.push_back(key);
 
             if (key != 0) {
                 if (context.soundOn) PlaySoundMulti(context.sounds.clickSound1);
             }
 
-            if (context.input.size() == 1 && !context.testRunning) {
+            if (context.input_list.size() == 1 && !context.testRunning) {
                 context.testRunning = true;
                 context.testStartTime = GetTime();
             }
 
             // Once the sentence is complete end the test
-            if (context.testRunning && context.input.size() == context.sentence.size()) {
+            if (context.testRunning && context.input_list.size() == context.sentenceLength) {
                 endTest(context);
             }
 
             // Calculate correct and incorrect typed letters and add more words as we type
-            if (context.input.size() > context.furthestVisitedIndex) {
-                if (context.input[context.input.size()-1] != context.sentence[context.input.size()-1]) {
-                    context.incorrecLetters++;
-                } else {
-                    context.correctLetters++;
-                }
+            if (context.input_list.size() > context.furthestVisitedIndex) {
+                context.canCount = true;
 
-                if (context.testSettings.testMode == TestMode::TIME) {
-                    if (context.sentence[context.input.size()-1] == ' ') {
-                        context.sentence += ' ';
-                        context.sentence += generateSentence(context, 1);
-                    }
+                if ((context.testSettings.testMode == TestMode::TIME) &&
+                    (context.furthestVisitedIndex > (context.sentenceLength * 0.8)))
+                {
+                    int amount = context.testSettings.testModeAmounts[context.testSettings.selectedAmount];
+                    context.sentence += ' ';
+                    context.sentence += generateSentence(context, amount);
                 }
             }
 
-            context.furthestVisitedIndex = std::max(context.furthestVisitedIndex, (int)context.input.size());
+            context.furthestVisitedIndex = std::max(context.furthestVisitedIndex, (int)context.input_list.size());
         }
+        // std::cout << context.correctLetters <<  "|" <<   context.incorrecLetters << "|" << context.furthestVisitedIndex << std::endl;
 
         // Calculate score
         if (context.testRunning && (GetTime()-context.testStartTime) > 3) {
-            double wpm = (context.correctLetters) * (60 / (GetTime() - context.testStartTime)) / 5.0;
-            double raw = (context.correctLetters+context.incorrecLetters) * (60 / (GetTime() - context.testStartTime)) / 5.0;
+            double wpm = (context.correctLetters+1) * (60 / (GetTime() - context.testStartTime)) / 5.0;
+            double raw = (context.correctLetters+1+context.incorrecLetters) * (60 / (GetTime() - context.testStartTime)) / 5.0;
             context.wpm = wpm;
             context.raw = raw;
-            context.accuracy = ((float)(context.correctLetters) / (context.correctLetters + context.incorrecLetters)) * 100;
+            context.accuracy = ((float)(context.correctLetters+1) / (context.correctLetters + 1 + context.incorrecLetters)) * 100;
         }
 
         typingTest(context);

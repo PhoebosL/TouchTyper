@@ -58,7 +58,9 @@ struct Context {
     std::vector<WordList> wordsLists;
     int selectedWordList = 0;
     std::string sentence;
+    int sentenceLength;
     std::string input;
+    std::vector<int> input_list;
     double testStartTime = 0;
     bool testRunning = false;
     double testEndTime = 0;
@@ -66,13 +68,14 @@ struct Context {
     int wpm = 0;
     int cpm = 0;
     int raw = 0;
+    bool canCount = true;
     int incorrecLetters = 0;
     int correctLetters = 0;
     int furthestVisitedIndex = -1;
     int accuracy = 0;
     Fonts fonts;
     std::vector<Theme> themes;
-    int selectedTheme = 2;
+    int selectedTheme = 1;
     CursorStyle cursorStyle = CursorStyle::BLOCK;
     TestSettings testSettings;
     bool mouseOnClickable = false;

@@ -9,7 +9,13 @@
 #define VERSION "N/A"
 #endif
 
-#define MAX_WIDTH 900
+#define MAX_WIDTH 1920
 #define PADDING 20
+
+// #define USE_FONT "LexendDeca-Regular.ttf"
+// #define USE_FONT "RobotoMono-SemiBold.ttf"
+#define USE_FONT "JetBrainsMono-Regular.ttf"
+#define ASSET_PATH "assets/"
+#define START_OVER_ON_ENTER false // disable creating new test on enter
 
 #endif

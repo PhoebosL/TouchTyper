@@ -45,7 +45,7 @@ void options(Context &context, std::vector<std::string> &options, Vector2 &start
                 }
 
                 if (context.currentScreen == Screen::TEST) {
-                    restartTest(context, false);
+                    restartTest(context, true, false);
                 }
             }
         }
@@ -98,7 +98,7 @@ void header(Context &context) {
     } else {
         color = theme.text;
         if (context.testSettings.testMode == TestMode::WORDS) {
-            text = TextFormat("%d/%d", context.input.size(), context.sentence.size());
+            text = TextFormat("%d/%d", context.input_list.size(), context.sentence.size());
         } else {
             text = TextFormat("%ds", (int)(GetTime() - context.testStartTime));
         }

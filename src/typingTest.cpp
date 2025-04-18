@@ -6,6 +6,10 @@
 #include "../libs/raylib/src/raymath.h"
 #include "constants.hpp"
 
+#include <iostream>
+#include <string>
+#include <cctype>
+
 Vector2 cursorPostion = {0, 0};
 Vector2 newCursorPosition = {0, 0};
 float cursorSpeed = 20;
@@ -16,8 +20,9 @@ int cursorOpacityDirection = 0;
 float cursorStayVisibleTimer = 0;
 
 std::vector<std::vector<char>> keyboard = {
+    // {'+', 'ě', 'š', 'č', 'ř', 'ž', 'ý', 'á', 'í', 'é', '=','\''},
     {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[',']'},
-    {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';','\''},
+    {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '"','!'},
     {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'},
     {' '}
 };
@@ -27,10 +32,56 @@ float sinPulse(float frequency) {
     return 0.5f * (1 + (float)std::sin(2 * pi * frequency * GetTime()));
 }
 
+std::vector<int> string_to_unicodes(const std::string& input)  {
+    std::vector<int> out;
+
+    for (size_t i = 0; i<input.length(); ++i) {
+        unsigned char byte = input[i];
+        if (byte < 0x80) {
+            out.push_back(byte);
+        } else { 
+            int unicode_value = 0;
+            if ((byte & 0xE0) == 0xC0) {
+                unicode_value = byte & 0x3F;
+                unicode_value <<= 6;
+                unicode_value |= (input[++i] & 0x3F);
+            } else if ((byte & 0xF0) == 0xE0) {
+                unicode_value = byte & 0x0F;
+                unicode_value <<= 12;
+                unicode_value |= (input[++i] & 0x3F)<<6;
+                unicode_value |= (input[++i] & 0x3F);
+            }
+            out.push_back(unicode_value);
+        }
+    }
+    return out;
+}
+std::string unicode_to_string(const int& val)  {
+    std::string out;
+        if (val < 0x80) {
+            out = static_cast<char>(val);
+        } else if (val < 0x800) { // 2 byte
+            out = static_cast<char>((val>>6)|0xC0);
+            out += static_cast<char>((val & 0x3F) | 0x80);
+        } else if (val < 0x10000) { // three byte
+            out = static_cast<char>((val>>12)| 0xE0);
+            out += static_cast<char>(((val>>6)& 0x3F) | 0x80);
+            out += static_cast<char>((val  & 0x3F) | 0x80);
+        } else  {
+            // four byte character todo
+        }
+    return out ;
+}
+
+
 void typingTest(Context &context) {
     // We are using a monospace font so every character will have same with
-    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.typingTestFont.font, "a",
-            context.fonts.typingTestFont.size, 1);
+    Vector2 sizeOfCharacter = MeasureTextEx(
+        context.fonts.typingTestFont.font,
+        "a",
+        context.fonts.typingTestFont.size,
+        1
+    );
 
     Theme theme = context.themes[context.selectedTheme];
 
@@ -64,14 +115,18 @@ void typingTest(Context &context) {
     std::string currentLine = "";
     std::string currentWord = "";
 
-    for (int i = 0; i < context.sentence.size(); i++) {
+    // convert string into array of codepoints (integers)
+    std::vector<int> unicode;
+    unicode = string_to_unicodes(context.sentence);
+    for (int i = 0; i < unicode.size(); i++) { // for (unsigned char c: context.sentence) {
+        int key = unicode[i];
+        std::string chr = unicode_to_string(key);
         // Detect the end of a word
-        if (context.sentence[i] == ' ' || i == (context.sentence.size() - 1)) {
-            currentWord += context.sentence[i];
+        if (key == 32 || i == (unicode.size() - 1)) { // if (context.sentence[i] == ' ' || i == (context.sentence.size() - 1)) {
+            currentWord += chr;
 
             // Calculate the width of the word
             float widthOfWord = currentWord.size() * sizeOfCharacter.x;
-
             float widthOfNewLine = widthOfWord + currentLine.size() * sizeOfCharacter.x;
 
             // Go to new line if word is overflowing
@@ -83,8 +138,11 @@ void typingTest(Context &context) {
             currentLine += currentWord;
             currentWord = "";
         } else {
-            currentWord.push_back(context.sentence[i]);
+            currentWord += chr;
+            // currentWord.push_back(chr);
+            // currentWord.push_back(context.sentence[i]);
         }
+        context.sentenceLength = i;
     }
 
     lines.push_back(currentLine);
@@ -107,38 +165,68 @@ void typingTest(Context &context) {
     int characterIndex = 0;
     int lineNumber = 1;
 
+
     for (auto& line : lines) {
         float widthOfLine = sizeOfCharacter.x * line.size();
-
         float currentLetterX = center.x - (widthOfLine/2);
 
-        for (char& letter : line) {
-            Color color = theme.text;
+        std::vector<int> unicode;
+        unicode = string_to_unicodes(line);
+        for (int i = 0; i < unicode.size(); i++) { // for (char& letter : line) {
+            int codepoint = unicode[i];
 
-            if (context.input.size() > characterIndex) {
-                // Check if the character is wrong
-                if (letter == context.input[characterIndex]) {
+            Color color = theme.text;
+            // Check if the character is wrong
+            if (context.input_list.size() > characterIndex) {
+                if (codepoint == context.input_list[characterIndex]) {
                     color = theme.correct;
+                    if (context.canCount && context.input_list.size() == (i + 1)) {
+                        context.correctLetters++;
+                        context.canCount = false;
+                    }
                 } else {
                     color = theme.wrong;
-
-                    // Draw underline if space
-                    if (letter == ' ') {
-                        DrawTextEx(context.fonts.typingTestFont.font, "_",
-                                {currentLetterX, currentLineY}, context.fonts.typingTestFont.size,
-                                1, color);
-
+                    if (context.canCount && context.input_list.size() == (i + 1)) {
+                        context.incorrecLetters++;
+                        context.canCount = false;
                     }
+                    if (codepoint == 32) // if space expected
+                        codepoint = 95; // ==> "_"
                 }
             }
 
-            // Draw Text
-            DrawTextEx(context.fonts.typingTestFont.font, std::string(1, letter).c_str(),
-                    {currentLetterX, currentLineY}, context.fonts.typingTestFont.size,
-                    1, color);
+
+            // Custom modification from: void DrawTextEx(...)
+            int textOffsetY = 0;            // Offset between lines (on line break '\n')
+            float textOffsetX = 0.0f;       // Offset X to next character to draw
+            float spacing = 1;
+            // Character quad scaling factor
+            float scaleFactor = context.fonts.typingTestFont.size/context.fonts.typingTestFont.font.baseSize;
+
+            int index = GetGlyphIndex(context.fonts.typingTestFont.font, codepoint);
+            if (codepoint == 10) { // if (codepoint == '\n') {
+                // textOffsetY += (int)((context.fonts.typingTestFont.font.baseSize + context.fonts.typingTestFont.font.baseSize/2)*scaleFactor);
+                // textOffsetX = 0.0f;
+            } else {
+                if ((codepoint != 32) && (codepoint != 9)) { // if ((codepoint != ' ') && (codepoint != '\t')) {
+                    DrawTextCodepoint(
+                        context.fonts.typingTestFont.font, 
+                        codepoint, // int representation of character eg. ord-value in python
+                        (Vector2){ currentLetterX + textOffsetX, currentLineY + textOffsetY }, 
+                        context.fonts.typingTestFont.size, 
+                        color
+                    );
+                }
+
+                if (context.fonts.typingTestFont.font.glyphs[index].advanceX == 0)
+                    textOffsetX += ((float)context.fonts.typingTestFont.font.recs[index].width*scaleFactor + spacing);
+                else
+                    textOffsetX += ((float)context.fonts.typingTestFont.font.glyphs[index].advanceX*scaleFactor + spacing);
+            }
+
 
             // Handle cursor
-            if (characterIndex == context.input.size()) {
+            if (characterIndex == context.input_list.size()) {
                 // Set the offset to make the cursor at center
                 newYOffset = lineNumber > 2 ? ((lineNumber-1) * sizeOfCharacter.y) - sizeOfCharacter.y : 1;
                 newCursorPosition = { currentLetterX, currentLineY };
@@ -151,23 +239,15 @@ void typingTest(Context &context) {
                     BeginBlendMode(BLEND_SUBTRACT_COLORS);
                     switch (context.cursorStyle) {
                         case CursorStyle::BLOCK:
-                            DrawRectangle(cursorPostion.x+1, cursorPostion.y,
-                                    sizeOfCharacter.x, sizeOfCharacter.y,
-                                    cursorColor);
+                            DrawRectangle(cursorPostion.x+1, cursorPostion.y, sizeOfCharacter.x, sizeOfCharacter.y, cursorColor);
                             // Make the color of the text inverted
-                            //color = theme.background;
-
+                            // color = theme.background;
                             break;
                         case CursorStyle::LINE:
-                            DrawRectangle(cursorPostion.x, cursorPostion.y,
-                                    2, sizeOfCharacter.y,
-                                    cursorColor);
-
+                            DrawRectangle(cursorPostion.x, cursorPostion.y, 2, sizeOfCharacter.y, cursorColor);
                             break;
                         case CursorStyle::UNDERLINE:
-                            DrawRectangle(cursorPostion.x+1, cursorPostion.y+sizeOfCharacter.y,
-                                    sizeOfCharacter.x, 3,
-                                    cursorColor);
+                            DrawRectangle(cursorPostion.x+1, cursorPostion.y+sizeOfCharacter.y, sizeOfCharacter.x, 3, cursorColor);
                             break;
                     }
                     EndBlendMode();
@@ -187,8 +267,7 @@ void typingTest(Context &context) {
     // Draw Keybaord
     const int sizeOfKey = 35;
     const int margin = 5;
-    sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a",
-            context.fonts.tinyFont.size, 1);
+    sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a", context.fonts.tinyFont.size, 1);
 
     if (IsKeyPressed(KEY_BACKSPACE)) {
         cursorStayVisibleTimer = 1;
