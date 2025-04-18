@@ -2,3 +2,5 @@ build/
 .DS_Store
 .vscode/settings.json
 url.txt
+/.vscode
+build_linux.sh
