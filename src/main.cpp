@@ -156,7 +156,75 @@ void loop() {
             // context.furthestVisitedIndex = context.furthestVisitedIndex < 1 ? 1 : context.furthestVisitedIndex;
         }
 
-        if (key && (context.input_list.size() < context.sentenceLength)) {
+        if (key && (context.accent)) {
+            if (key == 97) {
+                key = 225;    // Key: a
+            } else if (key == 65) {
+                key = 193;    // Key: A
+            } else if (key == 101 ) {
+                key = 233;     // Key: é
+            } else if (key == 69 ) {
+                key = 201;     // Key: É
+            } else if (key == 105 ) {
+                key = 237;     // Key: i
+            } else if (key == 73 ) {
+                key = 205;     // Key: I
+            } else if (key == 111 ) {
+                key = 243;     // Key: o
+            } else if (key == 79) {
+                key = 211;     // Key: O
+            } else if (key == 117 ) {
+                key = 250;     // Key: u
+            } else if (key == 85  ) {
+                key = 218;     // Key: U
+            } else if (key == 121) {
+                key = 253;     // Key: y
+            } else if (key == 89) {
+                key = 221;     // Key: Y
+            }
+            context.accent = false;
+        } else if (key && (context.bccent)) {
+            if (key == 99) {
+                key = 269;     // Key: c
+            } else if (key == 67) {
+                key = 268;     // Key: C
+            } else if (key == 100 ) {
+                key = 271;     // Key: d
+            } else if (key == 68) {
+                key = 270;     // Key: D
+            } else if (key == 101 ) {
+                key = 283;     // Key: ě
+            } else if (key == 69 ) {
+                key = 282;     // Key: Ě
+            } else if (key == 110 ) {
+                key = 328;     // Key: n
+            } else if (key == 78 ) {
+                key = 327;     // Key: N
+            } else if (key == 114 ) {
+                key = 345;     // Key: r
+            } else if (key == 82 ) {
+                key = 344;     // Key: R
+            } else if (key == 115 ) {
+                key = 353;     // Key: s
+            } else if (key == 83  ) {
+                key = 352;     // Key: S
+            } else if (key == 116 ) {
+                key = 357;     // Key: t
+            } else if (key == 84 ) {
+                key = 356;     // Key: T
+            } else if (key == 122) {
+                key = 382;     // Key: z
+            } else if (key == 90) {
+                key = 381;     // Key: Z
+            }
+            context.bccent = false;
+        } 
+
+        if (key == 180) {// ´ á
+            context.accent = true;
+        } else if (key == 711) {// ˇ ď
+            context.bccent = true;
+        } else if (key && (context.input_list.size() < context.sentenceLength)) {
             // context.input += key;
             context.input_list.push_back(key);
 

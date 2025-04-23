@@ -69,6 +69,8 @@ struct Context {
     int cpm = 0;
     int raw = 0;
     bool canCount = true;
+    bool accent = false;
+    bool bccent = false;
     int incorrecLetters = 0;
     int correctLetters = 0;
     int furthestVisitedIndex = -1;
