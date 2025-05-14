@@ -90,7 +90,49 @@ std::unordered_map<std::string, std::string> punctuations = {
     {"would", "wouldn't"}
 };
 
-std::string generateSentence(Context &context, int numberOfWords) {
+std::vector<int> string_to_unicodes(const std::string& input)  {
+    std::vector<int> out;
+
+    for (size_t i = 0; i<input.length(); ++i) {
+        unsigned char byte = input[i];
+        if (byte < 0x80) {
+            out.push_back(byte);
+        } else { 
+            int unicode_value = 0;
+            if ((byte & 0xE0) == 0xC0) {
+                unicode_value = byte & 0x3F;
+                unicode_value <<= 6;
+                unicode_value |= (input[++i] & 0x3F);
+            } else if ((byte & 0xF0) == 0xE0) {
+                unicode_value = byte & 0x0F;
+                unicode_value <<= 12;
+                unicode_value |= (input[++i] & 0x3F)<<6;
+                unicode_value |= (input[++i] & 0x3F);
+            }
+            out.push_back(unicode_value);
+        }
+    }
+    return out;
+}
+
+std::string unicode_to_string(const int& val) {
+    std::string out;
+        if (val < 0x80) {
+            out = static_cast<char>(val);
+        } else if (val < 0x800) { // 2 byte
+            out = static_cast<char>((val>>6)|0xC0);
+            out += static_cast<char>((val & 0x3F) | 0x80);
+        } else if (val < 0x10000) { // three byte
+            out = static_cast<char>((val>>12)| 0xE0);
+            out += static_cast<char>(((val>>6)& 0x3F) | 0x80);
+            out += static_cast<char>((val  & 0x3F) | 0x80);
+        } else  {
+            // four byte character todo
+        }
+    return out ;
+}
+
+std::string generateSentence(Context& context, int numberOfWords) {
     auto words = context.wordsLists[context.selectedWordList].words;
     std::string output = "";
 
@@ -171,6 +213,10 @@ std::string generateSentence(Context &context, int numberOfWords) {
 
     output.pop_back();
 
+    // Append the new characters to the existing sentence_list
+    std::vector<int> new_unicodes = string_to_unicodes(output);
+    context.sentence_list.insert(context.sentence_list.end(), new_unicodes.begin(), new_unicodes.end());
+
     return output;
 }
 
@@ -186,20 +232,20 @@ bool restartTest(Context &context, bool repeat, bool start_over) {
             amount = amount * 2;
         }
 
-        context.sentence = generateSentence(context, amount);
-
+        std::string sentence = generateSentence(context, amount);
         if (context.testSettings.usePunctuation) {
-            context.sentence[0] = toupper(context.sentence[0]);
+            sentence[0] = toupper(sentence[0]);
             if (context.testSettings.testMode == TestMode::WORDS && !useCaplitalNext) {
-                context.sentence += '.';
+                sentence += '.';
             }
         }
+
+        context.sentence_list = string_to_unicodes(sentence);
     } else if (!START_OVER_ON_ENTER) {
         context.input_list.push_back(10); // just write enter into current text
         return true;
     }
 
-    context.input = "";
     context.input_list.clear();
     context.currentScreen = Screen::TEST;
     context.wpm = 0;

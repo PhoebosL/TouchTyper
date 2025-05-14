@@ -35,5 +35,5 @@ void endTest(Context &context);
 bool getFileContent(std::string fileName, std::vector<std::string> & vecOfStrs);
 
 std::string generateSentence(Context &context, int words);
-
+std::string unicode_to_string(const int& val);
 #endif

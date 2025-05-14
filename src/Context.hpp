@@ -53,13 +53,12 @@ struct TestSettings {
 struct Context {
     int screenWidth;
     int screenHeight;
+    bool isResized = true;
     Screen currentScreen;
     Sounds sounds;
     std::vector<WordList> wordsLists;
     int selectedWordList = 0;
-    std::string sentence;
-    int sentenceLength;
-    std::string input;
+    std::vector<int> sentence_list;
     std::vector<int> input_list;
     double testStartTime = 0;
     bool testRunning = false;

@@ -54,7 +54,8 @@ void options(Context &context, std::vector<std::string> &options, Vector2 &start
             (word == firstOptions[0] && context.testSettings.useNumbers) ||
             (word == secondOptions[1] && context.testSettings.testMode == TestMode::TIME) ||
             (word == secondOptions[0] && context.testSettings.testMode == TestMode::WORDS) ||
-            (isAmounts && i == context.testSettings.selectedAmount)) {
+            (isAmounts && i == context.testSettings.selectedAmount)
+           ) {
             color = theme.correct;
         }
 
@@ -96,26 +97,43 @@ void header(Context &context) {
                 break;
         }
     } else {
+        // Calculate score
+        // {"WPM", TextFormat("%d ", context.wpm)},
+        // {"RAW", TextFormat("%d ", context.raw)},
+        // {"Accurate", TextFormat("%d\%% ", context.accuracy)},
+        // {"Time", TextFormat("%ds ", (int)((context.testEndTime - context.testStartTime)))},
+        // {"Correct", TextFormat("%d  ", context.correctLetters)},
+        // {"Incorect", TextFormat("%d  ", context.incorrecLetters)},
+        context.wpm =(double) (context.correctLetters+1) * (60 / (GetTime() - context.testStartTime)) / 5.0;
+        context.raw =(double) (context.correctLetters+1+context.incorrecLetters) * (60 / (GetTime() - context.testStartTime)) / 5.0;
+        context.accuracy = ((float)(context.correctLetters+1) / (context.correctLetters + 1 + context.incorrecLetters)) * 100;
+
         color = theme.text;
         if (context.testSettings.testMode == TestMode::WORDS) {
-            text = TextFormat("%d/%d", context.input_list.size(), context.sentence.size());
+            text = TextFormat("%d/%d  %d CPM/%d RAW",
+                context.input_list.size(),
+                context.sentence_list.size(),
+                context.correctLetters+1,
+                context.raw
+            );
         } else {
-            text = TextFormat("%ds", (int)(GetTime() - context.testStartTime));
+            text = TextFormat("%ds  %d CPM/%d RAW",
+                (int)(GetTime() - context.testStartTime),
+                context.correctLetters+1,
+                context.raw
+            );
         }
     }
 
     if (!context.testRunning) {
-        DrawTextEx(context.fonts.titleFont.font,
-                text.c_str(), topLeftPosition,
-                context.fonts.titleFont.size, 1, color);
+        DrawTextEx(context.fonts.titleFont.font, text.c_str(), topLeftPosition, context.fonts.titleFont.size, 1, color);
     } else {
         drawMonospaceText(context.fonts.titleFont.font, text, topLeftPosition, context.fonts.titleFont.size, color);
     }
 
     // Draw Options
     Vector2 startingPosition = topRightPosition;
-    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a",
-            context.fonts.tinyFont.size, 1);
+    Vector2 sizeOfCharacter = MeasureTextEx(context.fonts.tinyFont.font, "a", context.fonts.tinyFont.size, 1);
 
     options(context, firstOptions, startingPosition, sizeOfCharacter, false);
     startingPosition = topRightPosition;
@@ -149,7 +167,7 @@ void header(Context &context) {
             percentage = (GetTime() - context.testStartTime) / (float)amount;
             break;
         case TestMode::WORDS:
-            percentage = (context.furthestVisitedIndex+1.0) / context.sentence.size();
+            percentage = (context.furthestVisitedIndex+1.0) / context.sentence_list.size();
             break;
     }
 
